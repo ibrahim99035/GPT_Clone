@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>GPT Clone</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+	</head>
+	<body class="bg-slate-950 text-slate-100 min-h-screen">
+		<div class="h-screen grid grid-cols-1 md:grid-cols-[320px_1fr]">
+			<aside class="border-r border-slate-800 bg-slate-900/80 backdrop-blur p-4 flex flex-col gap-4">
+				<div class="flex items-center justify-between">
+					<h1 class="text-lg font-semibold">Chats</h1>
+					<button
+						id="newChatBtn"
+						class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-sm font-medium"
+					>
+						+ New
+					</button>
+				</div>
+
+				<div class="space-y-2">
+					<label for="globalModel" class="block text-xs text-slate-400">Default model</label>
+					<select
+						id="globalModel"
+						class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					></select>
+				</div>
+
+				<div id="chatList" class="flex-1 overflow-auto space-y-2 pr-1"></div>
+			</aside>
+
+			<main class="flex flex-col h-screen">
+				<header class="border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+					<div>
+						<h2 id="chatTitle" class="font-semibold">Select or create a chat</h2>
+						<p id="chatMeta" class="text-xs text-slate-400"></p>
+					</div>
+					<div class="flex items-center gap-2">
+						<button
+							id="chatViewBtn"
+							class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-sm font-medium"
+						>
+							Chat
+						</button>
+						<button
+							id="imageViewBtn"
+							class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-sm font-medium"
+						>
+							Image Studio
+						</button>
+						<button
+							id="deleteChatBtn"
+							class="hidden px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 transition text-sm font-medium"
+						>
+							Delete Chat
+						</button>
+					</div>
+				</header>
+
+				<section id="chatPanel" class="flex flex-col flex-1 min-h-0">
+					<section id="messages" class="flex-1 overflow-auto p-4 md:p-6 space-y-4"></section>
+
+					<footer class="border-t border-slate-800 p-4">
+						<form id="composerForm" class="max-w-4xl mx-auto">
+							<div class="flex flex-col gap-2">
+								<textarea
+									id="messageInput"
+									rows="3"
+									placeholder="Write your message..."
+									class="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+								></textarea>
+								<div class="flex items-center justify-between">
+									<p id="status" class="text-xs text-slate-400">Ready</p>
+									<button
+										id="sendBtn"
+										type="submit"
+										class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+									>
+										Send
+									</button>
+								</div>
+							</div>
+						</form>
+					</footer>
+				</section>
+
+				<section id="imagePanel" class="hidden flex-1 overflow-auto p-4 md:p-6">
+					<div class="max-w-4xl mx-auto w-full space-y-4">
+						<div class="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+							<p class="text-sm text-slate-300">Generate image (free keys may be rate-limited)</p>
+							<form id="imageForm" class="mt-3 space-y-3">
+								<textarea
+									id="imagePromptInput"
+									rows="3"
+									placeholder="Describe the image you want..."
+									class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+								></textarea>
+								<div class="flex items-center justify-between">
+									<p id="imageStatus" class="text-xs text-slate-400">Idle</p>
+									<button
+										id="generateImageBtn"
+										type="submit"
+										class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+									>
+										Generate
+									</button>
+								</div>
+							</form>
+						</div>
+
+						<div id="imagePreview" class="space-y-4"></div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<script type="module" src="./app.js"></script>
+	</body>
+</html>

@@ -1,0 +1,102 @@
+{
+  "chats": {
+    "f9316bbb-190d-4b36-8f1b-813a7d3cdeeb": {
+      "id": "f9316bbb-190d-4b36-8f1b-813a7d3cdeeb",
+      "title": "New Chat",
+      "model": "gemini-3-pro-preview",
+      "createdAt": "2026-03-29T10:55:21.314Z",
+      "updatedAt": "2026-03-29T10:56:14.054Z",
+      "messages": [
+        {
+          "id": "76a14a99-b156-47c1-b9c4-78fef2ec17f9",
+          "role": "user",
+          "content": "hi",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T10:55:21.403Z"
+        },
+        {
+          "id": "6ee6f66d-0937-4d0e-af52-6f5d2e2668cb",
+          "role": "assistant",
+          "content": "Hello! How can I help you today?",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T10:55:38.907Z"
+        },
+        {
+          "id": "5a9e5f38-694c-43fb-8eb1-02e76d303647",
+          "role": "user",
+          "content": "generate tree image",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T10:55:55.272Z"
+        },
+        {
+          "id": "30c1d5ee-f458-4ebe-987a-1ebf6894cf9c",
+          "role": "assistant",
+          "content": "{\n  \"action\": \"dalle.text2im\",\n  \"action_input\": \"{ \\\"prompt\\\": \\\"A majestic, ancient oak tree standing in a beautiful sunlit meadow. The tree has a thick, textured trunk and a wide, spreading canopy of vibrant green leaves. Sunlight filters through the branches, creating dappled shadows on the lush grass below. High-resolution, cinematic lighting, photorealistic style.\\\" }\",\n  \"thought\": \"The user wants an image of a tree. I will generate a high-quality, majestic oak tree in a scenic meadow to provide a visually appealing result.\"\n}",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T10:56:02.030Z"
+        }
+      ]
+    },
+    "968cc8c0-94c7-45cf-b29b-59cdaaa37830": {
+      "id": "968cc8c0-94c7-45cf-b29b-59cdaaa37830",
+      "title": "New Chat",
+      "model": "gemini-3-pro-preview",
+      "createdAt": "2026-03-29T10:56:18.602Z",
+      "updatedAt": "2026-03-29T10:56:18.602Z",
+      "messages": []
+    },
+    "0efaa827-9016-422c-b739-a9861a22d346": {
+      "id": "0efaa827-9016-422c-b739-a9861a22d346",
+      "title": "New Chat",
+      "model": "gemini-3-flash-preview",
+      "createdAt": "2026-03-29T11:00:04.439Z",
+      "updatedAt": "2026-03-29T11:05:27.885Z",
+      "messages": [
+        {
+          "id": "4f6fd169-1bbd-4749-98ee-ba989cac8c6c",
+          "role": "user",
+          "content": "What is OOP?",
+          "model": "gemini-3-pro-preview",
+          "createdAt": "2026-03-29T11:05:05.229Z"
+        },
+        {
+          "id": "95942334-cd79-4b4a-88a2-b36919adbf27",
+          "role": "user",
+          "content": "What is OOP?",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T11:05:14.763Z"
+        },
+        {
+          "id": "d67acc1a-558e-44e7-8db8-ad3ebf3009a2",
+          "role": "assistant",
+          "content": "**Object-Oriented Programming (OOP)** is a programming paradigm (a style of coding) based on the concept of **\"objects.\"**\n\nInstead of focusing on the logic and sequences required to complete a task (as in Procedural Programming), OOP focuses on the **data** (the objects) that you want to manipulate.\n\nHere is a breakdown of how it works:\n\n---\n\n### 1. The Core Concept: Classes and Objects\nThink of a **Class** as a blueprint and an **Object** as the actual house built from that blueprint.\n\n*   **Class:** A template for creating objects. It defines the characteristics (attributes) and behaviors (methods).\n    *   *Example:* A class called `Car`.\n*   **Object:** A specific instance of a class.\n    *   *Example:* Your specific red Toyota Corolla is an **object** of the `Car` class.\n\n---\n\n### 2. The Four Pillars of OOP\nTo be truly \"Object-Oriented,\" a language usually follows these four principles:\n\n#### A. Encapsulation (Data Hiding)\nThis is the practice of keeping data (variables) and the code that acts on that data (methods) together in one unit (an object). It also involves hiding the internal state of an object from the outside world.\n*   **Analogy:** You use a steering wheel to drive a car. You don’t need to see the engine's internal pistons or wires to make it move.\n\n#### B. Abstraction (Simplicity)\nAbstraction means showing only the essential features of an object and hiding the complex background details. It helps reduce complexity.\n*   **Analogy:** When you press \"Send\" on an email, you don't need to know the complex server protocols happening behind the scenes. You just interact with the \"Send\" button.\n\n#### C. Inheritance (Reusability)\nInheritance allows one class (the child) to derive attributes and methods from another class (the parent). This promotes \"code reusability.\"\n*   **Example:** If you have a class called `Animal`, you can create a child class called `Dog`. The `Dog` automatically gets the ability to `eat()` and `sleep()` from the `Animal` class without you having to rewrite that code.\n\n#### D. Polymorphism (Many Forms)\nPolymorphism allows different objects to be treated as instances of the same general class, but they can respond to the same command in different ways.\n*   **Example:** A `Dog` and a `Cat` both inherit from `Animal`. If you call a method `makeSound()`, the Dog will \"Bark\" and the Cat will \"Meow.\" The same method name behaves differently based on the object.\n\n---\n\n### 3. Why use OOP?\n*   **Modularity:** You can work on different parts of a program independently.\n*   **Reusability:** Through inheritance, you can use the same code multiple times.\n*   **Easier Maintenance:** If you need to fix a bug in \"User\" behavior, you only have to look at the `User` class.\n*   **Scalability:** It is much easier to manage large, complex software projects using OOP than using a long list of instructions (procedural code).\n\n---\n\n### 4. Popular OOP Languages\nMost modern, popular languages are either fully or partially object-oriented:\n*   **Java**\n*   **Python**\n*   **C++**\n*   **C#**\n*   **JavaScript**\n*   **Ruby**\n\n### Summary\nIf **Procedural Programming** is like a recipe (a list of steps to follow), **Object-Oriented Programming** is like building a kitchen filled with appliances (objects). Each appliance has its own job, but they all work together to help you cook a meal.",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T11:05:27.885Z"
+        }
+      ]
+    },
+    "96dd070c-311a-4535-add0-f4e0d5780e2d": {
+      "id": "96dd070c-311a-4535-add0-f4e0d5780e2d",
+      "title": "New Chat",
+      "model": "gemini-3-flash-preview",
+      "createdAt": "2026-03-29T11:39:56.288Z",
+      "updatedAt": "2026-03-29T11:41:18.523Z",
+      "messages": [
+        {
+          "id": "ab2e14af-f776-435a-8081-b682531ca177",
+          "role": "user",
+          "content": "wkljfkdldsfngb",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T11:40:55.502Z"
+        },
+        {
+          "id": "44f15577-a7e4-4718-b705-9256ff6a828a",
+          "role": "assistant",
+          "content": "It looks like you might have just mashed your keyboard! Did you have a specific question, or is there something I can help you with today?",
+          "model": "gemini-3-flash-preview",
+          "createdAt": "2026-03-29T11:41:18.523Z"
+        }
+      ]
+    }
+  }
+}

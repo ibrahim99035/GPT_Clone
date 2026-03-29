@@ -5,14 +5,25 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { InferenceClient } from "@huggingface/inference";
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+const DATA_DIR = path.join(process.cwd(), "data");
+const CHATS_DB_FILE = path.join(DATA_DIR, "chats.json");
+const GENERATED_IMAGES_DIR = path.join(process.cwd(), "generated-images");
+const IMAGE_TEXT_MODEL = process.env.GEMINI_IMAGE_PROMPT_MODEL || "gemini-3-flash-preview";
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image-preview";
+const HF_IMAGE_PROVIDER = process.env.HF_IMAGE_PROVIDER || "auto";
+const HF_IMAGE_MODEL = process.env.HF_IMAGE_MODEL || "Qwen/Qwen-Image";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+app.use(express.static(PUBLIC_DIR));
+app.use("/generated-images", express.static(GENERATED_IMAGES_DIR));
 
 if (!process.env.GEMINI_API_KEY) {
   console.error("❌ Error: GEMINI_API_KEY environment variable is not set.");
@@ -20,6 +31,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const hfClient = process.env.HF_TOKEN ? new InferenceClient(process.env.HF_TOKEN) : null;
 
 /**
  * Models exposed for a frontend dropdown.
@@ -44,7 +56,7 @@ const AVAILABLE_MODELS = [
 ];
 
 /**
- * In-memory store (no auth, lightweight prototype).
+ * Lightweight JSON-file database.
  * chats = {
  *   [chatId]: {
  *      id,
@@ -59,6 +71,33 @@ const AVAILABLE_MODELS = [
 const chats = {};
 
 const nowISO = () => new Date().toISOString();
+
+function loadChatsFromDisk() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(CHATS_DB_FILE)) {
+      fs.writeFileSync(CHATS_DB_FILE, JSON.stringify({ chats: {} }, null, 2), "utf8");
+      return;
+    }
+
+    const raw = fs.readFileSync(CHATS_DB_FILE, "utf8");
+    const parsed = JSON.parse(raw || "{}");
+    const savedChats = parsed?.chats;
+
+    if (savedChats && typeof savedChats === "object") {
+      Object.assign(chats, savedChats);
+    }
+  } catch (error) {
+    console.error("❌ Failed to load chat database:", error?.message || error);
+  }
+}
+
+function saveChatsToDisk() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(CHATS_DB_FILE, JSON.stringify({ chats }, null, 2), "utf8");
+}
+
+loadChatsFromDisk();
 
 function ensureChat(chatId) {
   const chat = chats[chatId];
@@ -121,6 +160,7 @@ app.post("/api/chats", (req, res) => {
   };
 
   chats[id] = chat;
+  saveChatsToDisk();
   return res.status(201).json(chat);
 });
 
@@ -151,6 +191,7 @@ app.patch("/api/chats/:chatId", (req, res, next) => {
     }
 
     chat.updatedAt = nowISO();
+    saveChatsToDisk();
     res.json(chat);
   } catch (error) {
     next(error);
@@ -161,6 +202,7 @@ app.delete("/api/chats/:chatId", (req, res, next) => {
   try {
     ensureChat(req.params.chatId);
     delete chats[req.params.chatId];
+    saveChatsToDisk();
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -209,6 +251,7 @@ app.post("/api/chats/:chatId/messages", async (req, res, next) => {
     chat.messages.push(assistantMessage);
     chat.model = selectedModel;
     chat.updatedAt = nowISO();
+    saveChatsToDisk();
 
     res.status(201).json({ user: userMessage, assistant: assistantMessage, chatId: chat.id });
   } catch (error) {
@@ -217,51 +260,109 @@ app.post("/api/chats/:chatId/messages", async (req, res, next) => {
 });
 
 /**
- * Two-stage image generation route based on your provided workflow:
- * 1) Text model writes a strong photography prompt.
- * 2) Image model generates and saves PNG.
+ * Main image route uses Hugging Face Inference Providers.
+ * Optional fallback prompt expansion uses Gemini text model if enabled.
  */
 app.post("/api/images/generate", async (req, res, next) => {
   try {
     const {
-      creativeRequest = "Write a high-quality, professional photography prompt for a modern, minimalist sneaker. The setting should be an upscale, well-lit apartment lobby.",
-      outputFileName = `generated_${Date.now()}.png`
+      creativeRequest = "A product photo of a modern minimalist sneaker in an upscale apartment lobby, cinematic light, high detail",
+      outputFileName = `generated_${Date.now()}.png`,
+      provider = HF_IMAGE_PROVIDER,
+      model = HF_IMAGE_MODEL,
+      numInferenceSteps = 5,
+      useGeminiPromptRewrite = false
     } = req.body || {};
 
-    const textModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const promptGeneration = await textModel.generateContent(creativeRequest);
-    const complexPrompt = promptGeneration.response.text();
+    if (typeof creativeRequest !== "string" || !creativeRequest.trim()) {
+      return res.status(400).json({ error: "creativeRequest is required" });
+    }
 
-    const imageModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-image-preview" });
-    const imageGeneration = await imageModel.generateContent({
-      contents: [{ parts: [{ text: complexPrompt }] }],
-      generationConfig: {
-        aspectRatio: "1:1",
-        sampleCount: 1
+    if (!hfClient) {
+      return res.status(503).json({
+        error: "HF_TOKEN is missing. Add HF_TOKEN in .env to use Hugging Face image generation."
+      });
+    }
+
+    let promptUsed = creativeRequest.trim();
+
+    if (useGeminiPromptRewrite) {
+      const textModel = genAI.getGenerativeModel({ model: IMAGE_TEXT_MODEL });
+      const promptGeneration = await textModel.generateContent(promptUsed);
+      promptUsed = promptGeneration.response.text();
+    }
+
+    const attemptedProviders = [];
+    const fallbackProviders = [provider, "auto", "hf-inference"].filter(
+      (value, index, arr) => typeof value === "string" && value.trim() && arr.indexOf(value) === index
+    );
+
+    let generatedImage = null;
+    let selectedProvider = provider;
+    let lastProviderError = null;
+
+    for (const providerCandidate of fallbackProviders) {
+      attemptedProviders.push(providerCandidate);
+      try {
+        generatedImage = await hfClient.textToImage({
+          provider: providerCandidate,
+          model,
+          inputs: promptUsed,
+          parameters: {
+            num_inference_steps: Number(numInferenceSteps) || 5
+          }
+        });
+        selectedProvider = providerCandidate;
+        break;
+      } catch (providerError) {
+        lastProviderError = providerError;
       }
-    });
+    }
 
-    const imagePart = imageGeneration.response?.candidates?.[0]?.content?.parts?.[0];
-    if (!imagePart?.inlineData?.data) {
-      return res.status(502).json({ error: "Image data was not returned by model" });
+    if (!generatedImage && lastProviderError) {
+      throw lastProviderError;
+    }
+
+    if (!generatedImage) {
+      return res.status(502).json({ error: "Image data was not returned by Hugging Face provider" });
     }
 
     const safeName = path.basename(outputFileName).replace(/[^a-zA-Z0-9._-]/g, "_");
-    const outputDir = path.join(process.cwd(), "generated-images");
-    fs.mkdirSync(outputDir, { recursive: true });
+    fs.mkdirSync(GENERATED_IMAGES_DIR, { recursive: true });
 
-    const outputPath = path.join(outputDir, safeName);
-    const buffer = Buffer.from(imagePart.inlineData.data, "base64");
+    const outputPath = path.join(GENERATED_IMAGES_DIR, safeName);
+    const imageArrayBuffer = await generatedImage.arrayBuffer();
+    const buffer = Buffer.from(imageArrayBuffer);
     fs.writeFileSync(outputPath, buffer);
 
+    const imageUrl = `/generated-images/${encodeURIComponent(safeName)}`;
+
     res.status(201).json({
-      promptUsed: complexPrompt,
+      promptUsed,
       outputFile: outputPath,
-      fileName: safeName
+      fileName: safeName,
+      imageUrl,
+      model,
+      provider: selectedProvider,
+      attemptedProviders
     });
   } catch (error) {
+    if (error?.status === 401 || error?.status === 403) {
+      return res.status(401).json({ error: "Invalid or unauthorized HF_TOKEN for Inference Providers." });
+    }
     if (error?.status === 429) {
-      return res.status(429).json({ error: "Free Tier Rate Limit hit. Wait 60 seconds and try again." });
+      return res.status(429).json({ error: "Hugging Face rate limit hit. Wait and try again." });
+    }
+    if (error?.status === 400 || error?.status === 404) {
+      return res.status(400).json({
+        error: "Invalid Hugging Face image provider/model or unsupported parameters."
+      });
+    }
+    if (String(error?.message || "").toLowerCase().includes("pre-paid credits are required")) {
+      return res.status(402).json({
+        error:
+          "Selected provider requires paid credits. Set HF_IMAGE_PROVIDER=auto (or hf-inference) in .env and retry."
+      });
     }
     next(error);
   }
@@ -271,6 +372,10 @@ app.use((error, _req, res, _next) => {
   const status = error?.status || 500;
   const message = error?.message || "Internal Server Error";
   res.status(status).json({ error: message });
+});
+
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 app.listen(PORT, () => {
